@@ -2,6 +2,7 @@
 
 import { Zap } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { WinXpButton } from "./WinXpButton";
 
 export function Header() {
   return (
@@ -20,10 +21,12 @@ export function Header() {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <WinXpButton />
           <ThemeToggle />
         </div>
       </div>
     </header>
   );
 }
+

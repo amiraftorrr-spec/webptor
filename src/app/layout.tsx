@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
     "jpeg to webp",
     "heic to webp",
     "convert to webp",
+    "windows xp webp converter",
   ],
   authors: [{ name: "amir aftor" }],
   openGraph: {
@@ -58,11 +60,14 @@ export default function RootLayout({
               (function() {
                 try {
                   const storedTheme = localStorage.getItem('theme');
-                  const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  if (storedTheme === 'dark' || (!storedTheme && supportDarkMode)) {
-                    document.documentElement.classList.add('dark');
-                  } else if (storedTheme === 'light') {
+                  if (storedTheme === 'win-xp' || storedTheme === 'xp') {
                     document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('win-xp');
+                  } else if (storedTheme === 'light') {
+                    document.documentElement.classList.remove('dark', 'win-xp');
+                  } else {
+                    document.documentElement.classList.remove('win-xp');
+                    document.documentElement.classList.add('dark');
                   }
                 } catch (e) {}
               })();
@@ -71,7 +76,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased min-h-screen flex flex-col bg-slate-50 dark:bg-[#0a0d14] text-slate-900 dark:text-slate-100 transition-colors duration-200`}>
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
