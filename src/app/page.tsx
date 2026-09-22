@@ -8,11 +8,27 @@ import { FileQueue } from "@/components/FileQueue";
 import { ComparisonModal } from "@/components/ComparisonModal";
 import { Footer } from "@/components/Footer";
 import { ImageFileItem, ConversionOptions } from "@/types";
-import { convertImageToWebP, getFileExtension, loadImageElement } from "@/lib/converter";
+import { convertImageToWebP, getFileExtension, loadImageElement, runWithConcurrency } from "@/lib/converter";
 import { downloadAllAsZip } from "@/lib/zip";
 import { triggerSuccessConfetti } from "@/lib/confetti";
+import { useTheme } from "@/context/ThemeContext";
+
+// Windows XP Components
+import { BlissBackground } from "@/components/winxp/BlissBackground";
+import { XpDesktopIcons } from "@/components/winxp/XpDesktopIcons";
+import { XpTaskbar } from "@/components/winxp/XpTaskbar";
+import { XpMenuBar } from "@/components/winxp/XpMenuBar";
+import { XpConversionSettings } from "@/components/winxp/XpConversionSettings";
+import { XpDropzone } from "@/components/winxp/XpDropzone";
+import { XpFileQueue } from "@/components/winxp/XpFileQueue";
+import { XpComparisonViewer } from "@/components/winxp/XpComparisonViewer";
+import { XpAboutModal } from "@/components/winxp/XpAboutModal";
+import { XpIcon } from "@/components/winxp/XpIcon";
+import { xpAudio } from "@/lib/xp-sound";
 
 export default function Home() {
+  const { isXpMode, toggleXpMode } = useTheme();
+
   const [items, setItems] = useState<ImageFileItem[]>([]);
   const [options, setOptions] = useState<ConversionOptions>({
     quality: 80,
@@ -25,8 +41,11 @@ export default function Home() {
   const [isZipping, setIsZipping] = useState<boolean>(false);
   const [zipProgress, setZipProgress] = useState<number>(0);
   const [comparingItem, setComparingItem] = useState<ImageFileItem | null>(null);
+  const [aboutModalOpen, setAboutModalOpen] = useState<boolean>(false);
+  const [isMaximized, setIsMaximized] = useState<boolean>(false);
 
   const resultsRef = useRef<HTMLDivElement>(null);
+  const xpFileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToResults = useCallback(() => {
     setTimeout(() => {
@@ -61,12 +80,14 @@ export default function Home() {
           convertedWidth: result.width,
           convertedHeight: result.height,
           savingsPercentage: result.savingsPercentage,
+          conversionTimeMs: result.conversionTimeMs,
           errorMessage: undefined,
         };
 
         setItems((prev) => prev.map((i) => (i.id === item.id ? updatedItem : i)));
         return updatedItem;
       } catch (err: any) {
+        xpAudio.playErrorSound();
         const errorItem: ImageFileItem = {
           ...item,
           status: "error",
@@ -118,11 +139,12 @@ export default function Home() {
 
       setItems((prev) => [...newItems, ...prev]);
 
-      // If auto-convert is enabled, process them immediately
+      // If auto-convert is enabled, process them with bounded concurrency
       if (autoConvert && newItems.length > 0) {
-        // Convert newly added items in parallel (bounded concurrency)
-        const promises = newItems.map((item) => processConversion(item, options));
-        const results = await Promise.all(promises);
+        const concurrency = typeof navigator !== "undefined" ? Math.max(2, Math.min(8, navigator.hardwareConcurrency || 4)) : 4;
+        const results = await runWithConcurrency(newItems, concurrency, (item) =>
+          processConversion(item, options)
+        );
         const hasSuccess = results.some((r) => r.status === "completed");
         if (hasSuccess) {
           triggerSuccessConfetti();
@@ -141,8 +163,10 @@ export default function Home() {
     const pendingItems = items.filter((i) => i.status !== "completed");
     
     try {
-      const promises = pendingItems.map((item) => processConversion(item, options));
-      const results = await Promise.all(promises);
+      const concurrency = typeof navigator !== "undefined" ? Math.max(2, Math.min(8, navigator.hardwareConcurrency || 4)) : 4;
+      const results = await runWithConcurrency(pendingItems, concurrency, (item) =>
+        processConversion(item, options)
+      );
       const hasSuccess = results.some((r) => r.status === "completed");
       if (hasSuccess) {
         triggerSuccessConfetti();
@@ -192,6 +216,191 @@ export default function Home() {
     setItems([]);
   };
 
+  const completedCount = items.filter((i) => i.status === "completed").length;
+
+  // Trigger hidden file picker in XP mode
+  const openXpFolderPicker = () => {
+    xpFileInputRef.current?.click();
+  };
+
+  const handleXpFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFilesSelected(Array.from(e.target.files));
+      e.target.value = "";
+    }
+  };
+
+  // ==========================================
+  // Render Windows XP Mode
+  // ==========================================
+  if (isXpMode) {
+    return (
+      <div className="relative min-h-screen w-full select-none overflow-x-hidden pb-12">
+        {/* Hidden File Input for XP Actions */}
+        <input
+          ref={xpFileInputRef}
+          type="file"
+          multiple
+          accept="image/*,.*"
+          onChange={handleXpFileInputChange}
+          className="hidden"
+        />
+
+        {/* Bliss Wallpaper Background */}
+        <BlissBackground />
+
+        {/* XP Desktop Icons */}
+        <XpDesktopIcons
+          onOpenMyPictures={openXpFolderPicker}
+          onClearQueue={handleClearAll}
+          onOpenAbout={() => setAboutModalOpen(true)}
+          queueCount={items.length}
+        />
+
+        {/* Main Application Window */}
+        <div className="relative z-10 p-2 sm:p-6 lg:p-10 max-w-7xl mx-auto flex justify-center">
+          <div
+            className={`w-full bg-[#ece9d8] border-2 border-[#0055ea] rounded-t-lg shadow-2xl transition-all duration-200 overflow-hidden flex flex-col ${
+              isMaximized ? "max-w-full" : "max-w-4xl"
+            }`}
+          >
+            {/* Windows Luna Titlebar */}
+            <div className="xp-titlebar flex items-center justify-between px-2 py-1 select-none">
+              <div className="flex items-center gap-2">
+                <XpIcon name="webptor" size={18} />
+                <span className="text-white font-bold text-xs tracking-wide text-shadow-xp truncate">
+                  webptor - Instant Image to WebP Converter v1.0
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="xp-win-btn xp-win-btn-min"
+                  title="Minimize"
+                  onClick={() => xpAudio.playClickSound()}
+                >
+                  _
+                </button>
+                <button
+                  type="button"
+                  className="xp-win-btn xp-win-btn-max"
+                  title={isMaximized ? "Restore Window" : "Maximize Window"}
+                  onClick={() => {
+                    xpAudio.playClickSound();
+                    setIsMaximized((prev) => !prev);
+                  }}
+                >
+                  □
+                </button>
+                <button
+                  type="button"
+                  className="xp-win-btn xp-win-btn-close"
+                  title="Close / Exit XP Mode"
+                  onClick={() => {
+                    xpAudio.playClickSound();
+                    toggleXpMode();
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Menu Bar & Navigation Bar */}
+            <XpMenuBar
+              onOpenFilePicker={openXpFolderPicker}
+              onConvertAll={handleConvertAll}
+              onDownloadZip={handleDownloadAllZip}
+              onClearAll={handleClearAll}
+              onOpenAbout={() => setAboutModalOpen(true)}
+              onToggleModern={toggleXpMode}
+              hasItems={items.length > 0}
+              hasCompleted={completedCount > 0}
+            />
+
+            {/* Window Content Workspace */}
+            <div className="p-3 sm:p-5 space-y-4 bg-[#ece9d8]">
+              {/* Image Conversion Settings */}
+              <XpConversionSettings
+                options={options}
+                onChange={setOptions}
+                autoConvert={autoConvert}
+                onAutoConvertChange={setAutoConvert}
+                disabled={isConvertingAll}
+              />
+
+              {/* Dropzone */}
+              <XpDropzone
+                onFilesSelected={handleFilesSelected}
+                disabled={isConvertingAll}
+              />
+
+              {/* Queue List */}
+              <div ref={resultsRef}>
+                <XpFileQueue
+                  items={items}
+                  isConvertingAll={isConvertingAll}
+                  isZipping={isZipping}
+                  zipProgress={zipProgress}
+                  onConvertAll={handleConvertAll}
+                  onDownloadAllZip={handleDownloadAllZip}
+                  onClearAll={handleClearAll}
+                  onRemoveItem={handleRemoveItem}
+                  onCompareItem={setComparingItem}
+                />
+              </div>
+            </div>
+
+            {/* Window Status Bar */}
+            <div className="bg-[#ece9d8] border-t border-[#d4d0c8] px-3 py-1 text-[11px] font-sans flex items-center justify-between text-gray-700 select-none">
+              <div className="flex items-center gap-2 truncate">
+                <span>
+                  {items.length === 0
+                    ? "Ready"
+                    : isConvertingAll
+                    ? "Converting images..."
+                    : `${items.length} item(s) in queue (${completedCount} completed)`}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0 text-gray-500 text-[10px]">
+                <span>100% Client-side</span>
+                <span>|</span>
+                <span className="flex items-center gap-1">
+                  <span>🔒</span> Local Intranet
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* XP Taskbar */}
+        <XpTaskbar
+          onOpenFilePicker={openXpFolderPicker}
+          onOpenAbout={() => setAboutModalOpen(true)}
+          onToggleModern={toggleXpMode}
+          queueCount={items.length}
+        />
+
+        {/* Windows Picture and Fax Viewer Modal (Comparison) */}
+        {comparingItem && (
+          <XpComparisonViewer
+            item={comparingItem}
+            onClose={() => setComparingItem(null)}
+          />
+        )}
+
+        {/* System Properties / About Modal */}
+        {aboutModalOpen && (
+          <XpAboutModal onClose={() => setAboutModalOpen(false)} />
+        )}
+      </div>
+    );
+  }
+
+  // ==========================================
+  // Render Modern Mode (Default)
+  // ==========================================
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-slate-50 dark:bg-[#090d16] bg-grid-pattern">
       <Header />
@@ -251,3 +460,4 @@ export default function Home() {
     </div>
   );
 }
+

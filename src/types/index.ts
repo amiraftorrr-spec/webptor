@@ -28,6 +28,7 @@ export interface ImageFileItem {
   convertedWidth?: number;
   convertedHeight?: number;
   savingsPercentage?: number; // e.g. 74 (%)
+  conversionTimeMs?: number; // e.g. 85 ms
   errorMessage?: string;
 }
 

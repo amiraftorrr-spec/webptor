@@ -1,4 +1,4 @@
-import { ConversionOptions, ImageFileItem } from "@/types";
+import { ConversionOptions } from "@/types";
 
 export function formatBytes(bytes: number, decimals = 2): string {
   if (bytes === 0) return "0 Bytes";
@@ -26,16 +26,26 @@ export function getBaseFileName(filename: string): string {
 /**
  * Checks if a file is HEIC/HEIF
  */
-function isHeicFile(file: File | Blob, filename = ""): boolean {
+export function isHeicFile(file: File | Blob, filename = ""): boolean {
   const isHeicType = file.type === "image/heic" || file.type === "image/heif";
   const isHeicExt = /\.(heic|heif)$/i.test(filename || (file instanceof File ? file.name : ""));
   return isHeicType || isHeicExt;
 }
 
 /**
+ * Checks if a file is an SVG vector
+ */
+export function isSvgFile(file: File | Blob, filename = ""): boolean {
+  return (
+    file.type === "image/svg+xml" ||
+    /\.svg$/i.test(filename || (file instanceof File ? file.name : ""))
+  );
+}
+
+/**
  * Preprocesses any file to a standard browser-readable Blob
  */
-async function preprocessImageFile(file: File): Promise<Blob> {
+export async function preprocessImageFile(file: File): Promise<Blob> {
   if (isHeicFile(file, file.name)) {
     try {
       const heic2anyModule = await import("heic2any");
@@ -91,7 +101,144 @@ export async function loadImageElement(
 }
 
 /**
- * Converts any image file to WebP format using HTML5 Canvas
+ * Decodes an image into an ImageBitmap using hardware acceleration where available,
+ * with automatic EXIF orientation preservation.
+ */
+async function decodeToBitmap(
+  blob: Blob
+): Promise<{ bitmap: ImageBitmap; width: number; height: number } | null> {
+  if (typeof window === "undefined" || !("createImageBitmap" in window)) {
+    return null;
+  }
+
+  // SVG images might fail in some createImageBitmap implementations; fallback to Image element for SVG
+  if (blob.type === "image/svg+xml") {
+    return null;
+  }
+
+  try {
+    const bitmap = await createImageBitmap(blob, {
+      imageOrientation: "from-image",
+      premultiplyAlpha: "default",
+      colorSpaceConversion: "default",
+    });
+    return {
+      bitmap,
+      width: bitmap.width,
+      height: bitmap.height,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Calculates target output dimensions considering scale and max constraints.
+ */
+function calculateTargetDimensions(
+  originalWidth: number,
+  originalHeight: number,
+  options: ConversionOptions
+): { width: number; height: number } {
+  let targetWidth = Math.round(originalWidth * (options.scale || 1.0));
+  let targetHeight = Math.round(originalHeight * (options.scale || 1.0));
+
+  if (options.maxWidth && targetWidth > options.maxWidth) {
+    const ratio = options.maxWidth / targetWidth;
+    targetWidth = options.maxWidth;
+    if (options.maintainAspectRatio) {
+      targetHeight = Math.round(targetHeight * ratio);
+    }
+  }
+
+  if (options.maxHeight && targetHeight > options.maxHeight) {
+    const ratio = options.maxHeight / targetHeight;
+    targetHeight = options.maxHeight;
+    if (options.maintainAspectRatio) {
+      targetWidth = Math.round(targetWidth * ratio);
+    }
+  }
+
+  return {
+    width: Math.max(1, targetWidth),
+    height: Math.max(1, targetHeight),
+  };
+}
+
+/**
+ * Multi-step stepped downsampling to achieve pristine bicubic-like downscaling quality.
+ * Prevents aliasing and moiré artifacts on high-resolution images.
+ */
+function drawWithSteppedDownsampling(
+  source: CanvasImageSource,
+  sourceWidth: number,
+  sourceHeight: number,
+  targetWidth: number,
+  targetHeight: number
+): HTMLCanvasElement | OffscreenCanvas {
+  // If downscaling is less than 50% or we are upscaling, single pass is optimal
+  if (targetWidth >= sourceWidth * 0.5 && targetHeight >= sourceHeight * 0.5) {
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext("2d", { willReadFrequently: false, alpha: true });
+    if (ctx) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
+    }
+    return canvas;
+  }
+
+  // Stepped halving passes
+  let currentWidth = sourceWidth;
+  let currentHeight = sourceHeight;
+  let currentCanvas = document.createElement("canvas");
+  currentCanvas.width = currentWidth;
+  currentCanvas.height = currentHeight;
+  let currentCtx = currentCanvas.getContext("2d", { willReadFrequently: false, alpha: true });
+  if (currentCtx) {
+    currentCtx.imageSmoothingEnabled = true;
+    currentCtx.imageSmoothingQuality = "high";
+    currentCtx.drawImage(source, 0, 0, currentWidth, currentHeight);
+  }
+
+  while (currentWidth * 0.5 > targetWidth && currentHeight * 0.5 > targetHeight) {
+    const nextWidth = Math.round(currentWidth * 0.5);
+    const nextHeight = Math.round(currentHeight * 0.5);
+
+    const nextCanvas = document.createElement("canvas");
+    nextCanvas.width = nextWidth;
+    nextCanvas.height = nextHeight;
+    const nextCtx = nextCanvas.getContext("2d", { willReadFrequently: false, alpha: true });
+    if (nextCtx) {
+      nextCtx.imageSmoothingEnabled = true;
+      nextCtx.imageSmoothingQuality = "high";
+      nextCtx.drawImage(currentCanvas, 0, 0, nextWidth, nextHeight);
+    }
+
+    currentWidth = nextWidth;
+    currentHeight = nextHeight;
+    currentCanvas = nextCanvas;
+  }
+
+  // Final step to exact target dimensions
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = targetWidth;
+  finalCanvas.height = targetHeight;
+  const finalCtx = finalCanvas.getContext("2d", { willReadFrequently: false, alpha: true });
+  if (finalCtx) {
+    finalCtx.imageSmoothingEnabled = true;
+    finalCtx.imageSmoothingQuality = "high";
+    finalCtx.drawImage(currentCanvas, 0, 0, targetWidth, targetHeight);
+  }
+
+  return finalCanvas;
+}
+
+/**
+ * Converts any image file to WebP format using hardware accelerated bitmaps,
+ * high-fidelity stepped scaling, and WebP encoding.
  */
 export async function convertImageToWebP(
   file: File,
@@ -104,77 +251,100 @@ export async function convertImageToWebP(
   width: number;
   height: number;
   savingsPercentage: number;
+  conversionTimeMs: number;
 }> {
-  onProgress?.(20);
+  const startTime = performance.now();
+  onProgress?.(15);
 
-  const { img, width: originalWidth, height: originalHeight, blobUrl } = await loadImageElement(file);
+  let processableBlob: Blob = file;
+  if (isHeicFile(file, file.name)) {
+    processableBlob = await preprocessImageFile(file);
+  }
 
-  onProgress?.(50);
+  onProgress?.(30);
+
+  // Try decoding with fast ImageBitmap first
+  const bitmapData = await decodeToBitmap(processableBlob);
+
+  let sourceWidth = 0;
+  let sourceHeight = 0;
+  let sourceElement: CanvasImageSource;
+  let cleanupCallback: (() => void) | null = null;
+
+  if (bitmapData) {
+    sourceWidth = bitmapData.width;
+    sourceHeight = bitmapData.height;
+    sourceElement = bitmapData.bitmap;
+    cleanupCallback = () => bitmapData.bitmap.close();
+  } else {
+    // Fallback to HTMLImageElement
+    const { img, width, height, blobUrl } = await loadImageElement(processableBlob);
+    sourceWidth = width;
+    sourceHeight = height;
+    sourceElement = img;
+    cleanupCallback = () => URL.revokeObjectURL(blobUrl);
+  }
+
+  onProgress?.(55);
 
   // Calculate target dimensions
-  let targetWidth = Math.round(originalWidth * (options.scale || 1.0));
-  let targetHeight = Math.round(originalHeight * (options.scale || 1.0));
+  const { width: targetWidth, height: targetHeight } = calculateTargetDimensions(
+    sourceWidth,
+    sourceHeight,
+    options
+  );
 
-  if (options.maxWidth && targetWidth > options.maxWidth) {
-    const ratio = options.maxWidth / targetWidth;
-    targetWidth = options.maxWidth;
-    targetHeight = Math.round(targetHeight * ratio);
+  // Render on canvas with stepped anti-aliased scaling
+  const renderedCanvas = drawWithSteppedDownsampling(
+    sourceElement,
+    sourceWidth,
+    sourceHeight,
+    targetWidth,
+    targetHeight
+  );
+
+  // Free memory
+  if (cleanupCallback) {
+    cleanupCallback();
   }
-
-  if (options.maxHeight && targetHeight > options.maxHeight) {
-    const ratio = options.maxHeight / targetHeight;
-    targetHeight = options.maxHeight;
-    targetWidth = Math.round(targetWidth * ratio);
-  }
-
-  // Ensure dimensions are at least 1x1
-  targetWidth = Math.max(1, targetWidth);
-  targetHeight = Math.max(1, targetHeight);
-
-  // Setup canvas
-  const canvas = document.createElement("canvas");
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-
-  const ctx = canvas.getContext("2d", { willReadFrequently: false });
-  if (!ctx) {
-    URL.revokeObjectURL(blobUrl);
-    throw new Error("Could not initialize 2D canvas context.");
-  }
-
-  // Image smoothing settings for high quality downscaling
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-
-  // Draw image on canvas
-  ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
   onProgress?.(80);
 
-  // Convert canvas to WebP Blob
+  // Normalize quality (0.01 to 1.0)
   const qualityParam = Math.max(0.01, Math.min(1.0, options.quality / 100));
 
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (result) => {
-        if (result) {
-          resolve(result);
-        } else {
-          reject(new Error("Canvas to WebP conversion failed."));
-        }
-      },
-      "image/webp",
-      qualityParam
-    );
-  });
+  let blob: Blob;
+
+  if ("convertToBlob" in renderedCanvas) {
+    // OffscreenCanvas support
+    blob = await (renderedCanvas as OffscreenCanvas).convertToBlob({
+      type: "image/webp",
+      quality: qualityParam,
+    });
+  } else {
+    // HTMLCanvasElement support
+    const htmlCanvas = renderedCanvas as HTMLCanvasElement;
+    blob = await new Promise<Blob>((resolve, reject) => {
+      htmlCanvas.toBlob(
+        (result) => {
+          if (result) {
+            resolve(result);
+          } else {
+            reject(new Error("Canvas to WebP encoding failed."));
+          }
+        },
+        "image/webp",
+        qualityParam
+      );
+    });
+  }
 
   const url = URL.createObjectURL(blob);
   const size = blob.size;
-
-  // Calculate savings
   const originalSize = file.size;
   const savedBytes = originalSize - size;
   const savingsPercentage = Math.round((savedBytes / originalSize) * 100);
+  const conversionTimeMs = Math.round(performance.now() - startTime);
 
   onProgress?.(100);
 
@@ -185,7 +355,32 @@ export async function convertImageToWebP(
     width: targetWidth,
     height: targetHeight,
     savingsPercentage,
+    conversionTimeMs,
   };
+}
+
+/**
+ * Concurrency-bounded queue runner.
+ * Allows running many image conversions in parallel up to `concurrency` limit
+ * without overloading memory or UI thread.
+ */
+export async function runWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let currentIndex = 0;
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (currentIndex < items.length) {
+      const index = currentIndex++;
+      results[index] = await fn(items[index]);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
 }
 
 /**

@@ -61,6 +61,12 @@ export function FileCard({ item, onRemove, onCompare }: FileCardProps) {
                     {item.savingsPercentage > 0 ? `-${item.savingsPercentage}%` : "0%"}
                   </span>
                 )}
+
+                {item.conversionTimeMs !== undefined && (
+                  <span className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60">
+                    ⚡ {item.conversionTimeMs}ms
+                  </span>
+                )}
               </>
             )}
 
