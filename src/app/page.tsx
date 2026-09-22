@@ -108,8 +108,7 @@ export default function Home() {
 
       for (const file of newFiles) {
         const id = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-        const previewUrl = URL.createObjectURL(file);
-
+        let previewUrl = URL.createObjectURL(file);
         let width = 0;
         let height = 0;
 
@@ -117,6 +116,9 @@ export default function Home() {
           const loaded = await loadImageElement(file);
           width = loaded.width;
           height = loaded.height;
+          if (loaded.blobUrl) {
+            previewUrl = loaded.blobUrl;
+          }
         } catch {
           // If dimension loading fails, default to 0
         }
