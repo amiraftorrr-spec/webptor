@@ -1,38 +1,99 @@
 import React from "react";
 
+export type XpIconName =
+  | "windows-flag"
+  | "my-computer"
+  | "my-pictures"
+  | "my-documents"
+  | "recycle-bin-empty"
+  | "recycle-bin-full"
+  | "internet-explorer"
+  | "webptor"
+  | "folder"
+  | "folder-open"
+  | "image-file"
+  | "zip"
+  | "gear"
+  | "info"
+  | "help"
+  | "search"
+  | "run"
+  | "shutdown"
+  | "logoff"
+  | "sound"
+  | "network"
+  | "compare"
+  | "refresh"
+  | "camera"
+  | "floppy"
+  | "delete"
+  | "control-panel"
+  | "notepad"
+  | "paint"
+  | "media-player"
+  | "minesweeper"
+  | "winamp"
+  | "usb"
+  | "security"
+  | "back"
+  | "forward"
+  | "error"
+  | "windows-off";
+
 interface XpIconProps {
-  name:
-    | "windows-flag"
-    | "my-computer"
-    | "my-pictures"
-    | "my-documents"
-    | "recycle-bin-empty"
-    | "recycle-bin-full"
-    | "internet-explorer"
-    | "webptor"
-    | "folder"
-    | "image-file"
-    | "zip"
-    | "gear"
-    | "info"
-    | "help"
-    | "search"
-    | "run"
-    | "shutdown"
-    | "logoff"
-    | "sound"
-    | "network"
-    | "compare"
-    | "refresh"
-    | "camera"
-    | "floppy"
-    | "delete";
+  name: XpIconName;
   className?: string;
   size?: number;
 }
 
+const PNG_MAP: Partial<Record<XpIconName, string>> = {
+  "my-computer": "/assets/winxp/computer.png",
+  "my-pictures": "/assets/winxp/pictures.png",
+  "my-documents": "/assets/winxp/folder.png",
+  "recycle-bin-empty": "/assets/winxp/recycle-bin-empty.png",
+  "recycle-bin-full": "/assets/winxp/recycle-bin-full.png",
+  "internet-explorer": "/assets/winxp/ie.png",
+  "control-panel": "/assets/winxp/control-panel.png",
+  "sound": "/assets/winxp/volume.png",
+  "search": "/assets/winxp/search.png",
+  "shutdown": "/assets/winxp/turn-off.png",
+  "logoff": "/assets/winxp/log-off.png",
+  "notepad": "/assets/winxp/notepad.png",
+  "paint": "/assets/winxp/paint.png",
+  "media-player": "/assets/winxp/media-player.png",
+  "minesweeper": "/assets/winxp/minesweeper.png",
+  "winamp": "/assets/winxp/winamp.png",
+  "usb": "/assets/winxp/usb.png",
+  "security": "/assets/winxp/security.png",
+  "back": "/assets/winxp/back.png",
+  "forward": "/assets/winxp/forward.png",
+  "error": "/assets/winxp/error.png",
+  "folder": "/assets/winxp/folder.png",
+  "folder-open": "/assets/winxp/folder-open.png",
+  "windows-off": "/assets/winxp/windows-off.png",
+};
+
 export function XpIcon({ name, className = "", size = 24 }: XpIconProps) {
   const pixelSize = size;
+
+  // Use authentic PNG icon if available
+  if (PNG_MAP[name]) {
+    return (
+      <img
+        src={PNG_MAP[name]}
+        alt={name}
+        width={pixelSize}
+        height={pixelSize}
+        draggable={false}
+        className={`inline-block object-contain select-none ${className}`}
+        style={{
+          width: `${pixelSize}px`,
+          height: `${pixelSize}px`,
+          imageRendering: "auto",
+        }}
+      />
+    );
+  }
 
   switch (name) {
     case "windows-flag":

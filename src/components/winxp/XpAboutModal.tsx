@@ -103,8 +103,22 @@ export function XpAboutModal({ onClose }: XpAboutModalProps) {
               <div className="border-t border-[#d4d0c8] pt-2 grid grid-cols-2 gap-2 text-[11px]">
                 <div>
                   <span className="text-gray-600 block">Registered to:</span>
-                  <strong className="text-black block">Amir Aftor</strong>
-                  <span className="text-gray-500 text-[10px]">webptor Creator</span>
+                  <a
+                    href="https://aftor.ir"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-black font-bold block hover:underline hover:text-[#0055ea]"
+                  >
+                    Amir Aftor
+                  </a>
+                  <a
+                    href="https://aftor.ir"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-700 hover:underline text-[10px] block"
+                  >
+                    aftor.ir
+                  </a>
                 </div>
                 <div>
                   <span className="text-gray-600 block">Engine:</span>

@@ -18,6 +18,8 @@ interface XpFileQueueProps {
   onClearAll: () => void;
   onRemoveItem: (id: string) => void;
   onCompareItem: (item: ImageFileItem) => void;
+  onSelectItem?: (item: ImageFileItem) => void;
+  selectedItemId?: string | null;
 }
 
 export function XpFileQueue({
@@ -30,8 +32,11 @@ export function XpFileQueue({
   onClearAll,
   onRemoveItem,
   onCompareItem,
+  onSelectItem,
+  selectedItemId,
 }: XpFileQueueProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null);
+  const selectedId = selectedItemId !== undefined ? selectedItemId : internalSelectedId;
 
   if (items.length === 0) return null;
 
@@ -167,7 +172,10 @@ export function XpFileQueue({
               return (
                 <tr
                   key={item.id}
-                  onClick={() => setSelectedId(item.id)}
+                  onClick={() => {
+                    setInternalSelectedId(item.id);
+                    onSelectItem?.(item);
+                  }}
                   className={`border-b border-[#f0f0f0] cursor-pointer transition-none ${
                     isSelected ? "bg-[#316ac5] text-white" : "hover:bg-[#eef4fd] text-black"
                   }`}

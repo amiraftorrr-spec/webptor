@@ -1,4 +1,3 @@
-import JSZip from "jszip";
 import { ImageFileItem } from "@/types";
 import { getBaseFileName } from "./converter";
 
@@ -16,6 +15,8 @@ export async function downloadAllAsZip(
     throw new Error("No completed images to download.");
   }
 
+  const JSZipModule = await import("jszip");
+  const JSZip = JSZipModule.default || JSZipModule;
   const zip = new JSZip();
   const folder = zip.folder("webp-images") || zip;
 

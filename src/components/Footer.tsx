@@ -17,7 +17,14 @@ export function Footer() {
 
         <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
           <span>made by</span>
-          <span className="text-slate-800 dark:text-slate-200 font-semibold">amir aftor</span>
+          <a
+            href="https://aftor.ir"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-800 dark:text-slate-200 font-semibold hover:text-indigo-600 dark:hover:text-indigo-400 underline underline-offset-2 transition-colors"
+          >
+            amiraftor
+          </a>
         </div>
       </div>
     </footer>

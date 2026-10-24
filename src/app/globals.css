@@ -91,73 +91,102 @@ body {
 
 /* Window Titlebar */
 .xp-titlebar {
+  font-family: "Trebuchet MS", Tahoma, Arial, sans-serif;
   background: linear-gradient(
     180deg,
-    #0058ee 0%,
-    #3593ff 4%,
-    #288eff 6%,
-    #127dff 8%,
-    #036ffc 10%,
-    #0262ee 14%,
-    #0057e5 20%,
-    #0054e3 24%,
-    #0055e7 56%,
-    #0054e3 82%,
-    #004ee0 88%,
-    #0044db 91%,
-    #0036ca 95%,
-    #0026b9 100%
+    rgba(9, 151, 255, 1) 0%,
+    rgba(0, 83, 238, 1) 8%,
+    rgba(0, 80, 238, 1) 40%,
+    rgba(0, 102, 255, 1) 88%,
+    rgba(0, 102, 255, 1) 93%,
+    rgba(0, 91, 255, 1) 95%,
+    rgba(0, 61, 215, 1) 96%,
+    rgba(0, 61, 215, 1) 100%
   );
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  height: 30px;
+  border-top: 1px solid #0831d9;
+  border-left: 1px solid #0831d9;
+  border-right: 1px solid #001ea0;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 7px;
+  font-size: 13px;
+  text-shadow: 1px 1px #0f1089;
+  height: 29px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Window Outer Container */
+.xp-window {
+  box-shadow: inset -1px -1px #00138c, inset 1px 1px #0831d9, inset -2px -2px #001ea0, inset 2px 2px #166aee,
+    inset -3px -3px #003bda, inset 3px 3px #0855dd, 0 10px 25px rgba(0, 0, 0, 0.45);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding: 0 0 3px 0;
+  background-color: #ece9d8;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Window Control Buttons */
 .xp-win-btn {
   width: 21px;
   height: 21px;
-  border-radius: 3px;
+  min-width: 21px;
+  min-height: 21px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: sans-serif;
-  font-size: 11px;
-  font-weight: bold;
   cursor: pointer;
-  border: 1px solid #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0, 0, 0, 0.3);
-  transition: filter 0.1s ease;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: none;
+  background-color: transparent;
   user-select: none;
+  transition: filter 0.08s ease;
+  color: transparent;
+  font-size: 0;
 }
 
-.xp-win-btn:active {
-  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.6);
-  transform: translateY(1px);
+.xp-win-btn:focus {
+  outline: none;
 }
 
-.xp-win-btn-min,
+.xp-win-btn-min {
+  background-image: url('/assets/winxp/minimize.svg');
+}
+.xp-win-btn-min:hover {
+  background-image: url('/assets/winxp/minimize-hover.svg');
+}
+.xp-win-btn-min:active {
+  background-image: url('/assets/winxp/minimize-active.svg');
+}
+
 .xp-win-btn-max {
-  background: linear-gradient(180deg, #428cf7 0%, #1e5fc9 50%, #0c43a3 100%);
-  color: white;
-  text-shadow: 0 -1px 0 #072a6b;
+  background-image: url('/assets/winxp/maximize.svg');
+}
+.xp-win-btn-max:hover {
+  background-image: url('/assets/winxp/maximize-hover.svg');
+}
+.xp-win-btn-max:active {
+  background-image: url('/assets/winxp/maximize-active.svg');
 }
 
-.xp-win-btn-min:hover,
-.xp-win-btn-max:hover {
-  background: linear-gradient(180deg, #64a5ff 0%, #3275de 50%, #1754be 100%);
+.xp-win-btn-restore {
+  background-image: url('/assets/winxp/restore.svg');
+}
+.xp-win-btn-restore:hover {
+  background-image: url('/assets/winxp/restore-hover.svg');
+}
+.xp-win-btn-restore:active {
+  background-image: url('/assets/winxp/restore-active.svg');
 }
 
 .xp-win-btn-close {
-  background: linear-gradient(180deg, #f57364 0%, #e03926 50%, #c41e0a 100%);
-  color: white;
-  text-shadow: 0 -1px 0 #6e0c00;
+  background-image: url('/assets/winxp/close.svg');
 }
-
 .xp-win-btn-close:hover {
-  background: linear-gradient(180deg, #ff8c7e 0%, #f04e3b 50%, #d82c16 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 4px rgba(255, 60, 60, 0.8);
+  background-image: url('/assets/winxp/close-hover.svg');
+}
+.xp-win-btn-close:active {
+  background-image: url('/assets/winxp/close-active.svg');
 }
 
 /* Authentic Luna Button */
@@ -165,10 +194,9 @@ body {
   font-family: Tahoma, "Segoe UI", Arial, sans-serif;
   font-size: 11px;
   color: #000;
-  background: linear-gradient(180deg, #ffffff 0%, #f2efe4 50%, #e3ded1 85%, #cfc9bb 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #ecebd8 86%, #d8d0c4 100%);
   border: 1px solid #003c74;
   border-radius: 3px;
-  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 #dfd9cb;
   cursor: pointer;
   user-select: none;
   display: inline-flex;
@@ -179,13 +207,19 @@ body {
 }
 
 .xp-btn:hover:not(:disabled) {
-  border-color: #e5a01a;
-  box-shadow: inset 0 0 3px #ffe699, 0 0 3px rgba(229, 160, 26, 0.6);
+  box-shadow: inset -1px 1px #fff0cf, inset 1px 2px #fdd889, inset -2px 2px #fbc761, inset 2px -2px #e5a01a;
+  border-color: #003c74;
 }
 
 .xp-btn:active:not(:disabled) {
-  background: linear-gradient(180deg, #d3ccc0 0%, #e2ded5 100%);
-  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(
+    180deg,
+    rgba(205, 202, 195, 1) 0%,
+    rgba(227, 227, 219, 1) 8%,
+    rgba(229, 229, 222, 1) 94%,
+    rgba(242, 242, 241, 1) 100%
+  );
+  box-shadow: none;
   padding-top: 4px;
   padding-bottom: 2px;
 }
@@ -312,4 +346,44 @@ body {
   border-radius: 2px;
   cursor: pointer;
 }
+
+/* Windows XP Marquee Selection Box */
+.xp-select-rect {
+  position: absolute;
+  border: 1px dotted #316ac5;
+  background-color: rgba(49, 106, 197, 0.25);
+  pointer-events: none;
+  z-index: 15;
+}
+
+/* Windows XP Scrollbar */
+.win-xp ::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+.win-xp ::-webkit-scrollbar-track {
+  background: #ece9d8;
+  border: 1px solid #d4d0c8;
+}
+
+.win-xp ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ffffff 0%, #ecebd8 50%, #d8d0c4 100%);
+  border: 1px solid #003c74;
+  border-radius: 2px;
+  box-shadow: inset 1px 1px 0 #fff;
+}
+
+.win-xp ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #fde49e 50%, #fbc256 100%);
+}
+
+.win-xp ::-webkit-scrollbar-button {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #ecebd8 50%, #d8d0c4 100%);
+  border: 1px solid #003c74;
+}
+
 

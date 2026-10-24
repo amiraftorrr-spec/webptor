@@ -78,7 +78,7 @@ export function XpDropzone({ onFilesSelected, disabled = false }: XpDropzoneProp
 
     const droppedFiles = Array.from(e.dataTransfer.files);
     if (droppedFiles.length > 0) {
-      xpAudio.playClickSound();
+      xpAudio.playInsertSound();
       onFilesSelected(droppedFiles);
     }
   };
@@ -86,7 +86,7 @@ export function XpDropzone({ onFilesSelected, disabled = false }: XpDropzoneProp
   const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFiles = Array.from(e.target.files);
-      xpAudio.playClickSound();
+      xpAudio.playInsertSound();
       onFilesSelected(selectedFiles);
       e.target.value = "";
     }

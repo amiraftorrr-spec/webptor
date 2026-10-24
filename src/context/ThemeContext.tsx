@@ -23,14 +23,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setMounted(true);
     try {
       const stored = localStorage.getItem("theme");
-      if (stored === "win-xp" || stored === "xp") {
-        setThemeState("win-xp");
-        document.documentElement.classList.remove("dark");
-        document.documentElement.classList.add("win-xp");
-      } else if (stored === "light") {
+      if (stored === "light") {
         setThemeState("light");
         document.documentElement.classList.remove("dark", "win-xp");
       } else {
+        // Default is strictly dark mode - never auto-switch to win-xp on page load
         setThemeState("dark");
         document.documentElement.classList.add("dark");
         document.documentElement.classList.remove("win-xp");
@@ -43,7 +40,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = (nextTheme: ThemeMode) => {
     setThemeState(nextTheme);
     try {
-      localStorage.setItem("theme", nextTheme);
+      if (nextTheme === "light" || nextTheme === "dark") {
+        localStorage.setItem("theme", nextTheme);
+      }
     } catch {}
 
     if (typeof document !== "undefined") {

@@ -11,6 +11,8 @@ interface XpMenuBarProps {
   onClearAll: () => void;
   onOpenAbout: () => void;
   onToggleModern: () => void;
+  onToggleSidebar?: () => void;
+  sidebarOpen?: boolean;
   hasItems: boolean;
   hasCompleted: boolean;
 }
@@ -22,6 +24,8 @@ export function XpMenuBar({
   onClearAll,
   onOpenAbout,
   onToggleModern,
+  onToggleSidebar,
+  sidebarOpen = true,
   hasItems,
   hasCompleted,
 }: XpMenuBarProps) {
@@ -218,6 +222,26 @@ export function XpMenuBar({
           </div>
         </button>
 
+        {/* Folders / Tasks Toggle */}
+        {onToggleSidebar && (
+          <button
+            type="button"
+            onClick={() => {
+              xpAudio.playClickSound();
+              onToggleSidebar();
+            }}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-sans text-[#333] ${
+              sidebarOpen
+                ? "bg-[#316ac5]/20 border border-[#316ac5]/40 shadow-inner font-bold"
+                : "hover:bg-black/5 active:bg-black/10"
+            }`}
+            title="Toggle Tasks and Folders Sidebar"
+          >
+            <XpIcon name="folder" size={16} />
+            <span>Tasks</span>
+          </button>
+        )}
+
         <div className="h-5 w-[1px] bg-[#b5b1a1] mx-1" />
 
         {/* Open Folder Action */}
@@ -229,7 +253,7 @@ export function XpMenuBar({
           }}
           className="flex items-center gap-1 px-2 py-1 rounded hover:bg-black/5 active:bg-black/10 text-[11px] font-sans text-[#333]"
         >
-          <XpIcon name="folder" size={16} />
+          <XpIcon name="folder-open" size={16} />
           <span>Browse</span>
         </button>
 

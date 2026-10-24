@@ -64,3 +64,4 @@ The easiest way to deploy this project is via the [Vercel Platform](https://verc
 
 ## 📄 License
 MIT License. Free for personal and commercial use.
+    
